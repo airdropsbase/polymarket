@@ -1,0 +1,93 @@
+<div id="live-pulse">
+  <div class="flex items-center justify-between mb-3 gap-2">
+    <h2 class="text-sm font-semibold text-white">Market Pulse</h2>
+    <span class="text-[10px] text-slate-500 font-mono">{% if snapshot and snapshot.checked_at %}{{ snapshot.checked_at[11:19] }} UTC{% endif %}</span>
+  </div>
+  {% if snapshot and snapshot.errors %}
+  <div class="mb-2 text-[11px] text-rose-400 break-all">{{ snapshot.errors | join(' · ') }}</div>
+  {% endif %}
+  {% if snapshot and snapshot.pairs %}
+    {% for pair, data in snapshot.pairs.items() %}
+    <div class="mb-2 flex items-baseline justify-between gap-2">
+      <div class="flex items-baseline gap-2">
+        <span class="text-xs font-semibold text-white">{{ pair }}</span>
+        <span class="text-[10px] text-slate-600 font-mono">USDT</span>
+      </div>
+      {% if data.price %}
+      <div class="text-right">
+        <span class="text-sm font-bold text-white tabular-nums">${{ '{:,.2f}'.format(data.price) }}</span>
+        <span class="text-[10px] text-emerald-400/80 ml-1">live</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="grid grid-cols-1 gap-3">
+      {% set t = data.get('5m', {}) %}
+      <div class="rounded-xl bg-ink-850 ring-1 ring-white/5 p-3">
+        <div class="flex items-center gap-2 text-xs mb-2">
+          <span class="text-white font-semibold">5m</span>
+          <span class="text-[9px] text-slate-500">L5 Value Lock</span>
+          {% if t.error %}
+            <span class="text-rose-400 truncate text-[11px]">{{ t.error }}</span>
+          {% elif t.signal == 'DOWN' %}
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-500/15 text-orange-300">DOWN</span>
+          {% elif t.signal == 'UP' %}
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/15 text-sky-300">UP</span>
+          {% else %}
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-500/15 text-slate-400">FLAT</span>
+          {% endif %}
+          <span class="text-[10px] text-slate-500 tabular-nums ml-auto">
+            t+{{ t.elapsed if t.elapsed is defined else '—' }}s
+            {% if t.decision_zone %}<span class="text-emerald-400">· zone</span>{% endif %}
+          </span>
+        </div>
+        {% if not t.error %}
+        <div class="grid grid-cols-2 gap-1.5 text-[11px] mb-1.5">
+          <div class="rounded bg-violet-500/10 px-2 py-1.5 ring-1 ring-violet-500/20">
+            <div class="text-[9px] text-violet-300/80 uppercase">Running open</div>
+            <div class="font-mono font-bold text-violet-100 tabular-nums">{% if t.target_window %}{{ t.target_window }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="rounded bg-emerald-500/10 px-2 py-1.5 ring-1 ring-emerald-500/20">
+            <div class="text-[9px] text-emerald-300/80 uppercase">BTC now</div>
+            <div class="font-mono font-bold text-emerald-100 tabular-nums">{% if t.spot is number %}${{ '{:,.2f}'.format(t.spot) }}{% elif data.price %}${{ '{:,.2f}'.format(data.price) }}{% else %}—{% endif %}</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+          <div class="rounded bg-sky-500/10 px-2 py-1.5 ring-1 ring-sky-500/20">
+            <div class="text-[9px] text-sky-300/80 uppercase">Up ask</div>
+            <div class="font-mono font-bold text-sky-200 tabular-nums text-sm">{% if t.best_ask_up is number %}{{ '%.3f'|format(t.best_ask_up) }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="rounded bg-orange-500/10 px-2 py-1.5 ring-1 ring-orange-500/20">
+            <div class="text-[9px] text-orange-300/80 uppercase">Down ask</div>
+            <div class="font-mono font-bold text-orange-200 tabular-nums text-sm">{% if t.best_ask_down is number %}{{ '%.3f'|format(t.best_ask_down) }}{% else %}—{% endif %}</div>
+          </div>
+        </div>
+        {% set feat = t.get('feat', {}) %}
+        <div class="mt-1.5 flex flex-wrap gap-x-3 text-[10px] text-slate-500">
+          <span>z30 <b class="text-slate-300">{% if feat.z30 is number %}{{ '%+.2f'|format(feat.z30) }}{% else %}—{% endif %}</b></span>
+          <span>edge <b class="text-slate-300">{% if feat.edge is number %}{{ '%+.3f'|format(feat.edge) }}{% else %}—{% endif %}</b></span>
+          <span>Φ <b class="text-slate-300">{% if feat.p_model is number %}{{ '%.3f'|format(feat.p_model) }}{% else %}—{% endif %}</b></span>
+          <span>vol <b class="text-slate-300">{% if feat.vol30 is number %}{{ '%.5f'|format(feat.vol30) }}{% else %}—{% endif %}</b></span>
+        </div>
+        {% if t.heartbeat %}
+        <div class="mt-1 text-[10px] text-slate-600 truncate">
+          hb: {{ t.heartbeat.reason or '—' }}
+          · hist {{ t.heartbeat.vol_hist_len if t.heartbeat.vol_hist_len is defined else '—' }}
+          · scans {{ t.heartbeat.scan_count or 0 }}
+          · sigs {{ t.heartbeat.signal_count or 0 }}
+        </div>
+        {% endif %}
+        {% if t.book_error %}<div class="text-[10px] text-rose-400/80 mt-1 truncate">book: {{ t.book_error }}</div>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="text-xs text-slate-500 py-4 text-center">
+      {% if snapshot and snapshot.errors %}
+        Pulse error: {{ snapshot.errors | join(' · ') }}
+      {% else %}
+        Waiting for market data…
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

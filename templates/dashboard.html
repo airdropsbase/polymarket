@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Signal Desk{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-end justify-between gap-3 flex-wrap">
+    <div>
+      <h1 class="text-xl font-semibold text-white tracking-tight">Welcome{% if current_user %}, {{ current_user.display_name or current_user.username }}{% endif %}</h1>
+      <p class="text-xs text-slate-500 mt-0.5">BTC · ETH · 15m automation desk</p>
+    </div>
+  </div>
+
+  {% if request.query_params.get('scanned') %}
+  <div class="rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/25 text-emerald-300 text-sm px-4 py-3 flex items-center justify-between gap-3">
+    <span>Manual scan completed.</span>
+    <a href="/" class="text-emerald-400/80 hover:text-emerald-300 text-xs">Dismiss</a>
+  </div>
+  {% endif %}
+
+  {# Fast DB stats first; live fields from cache. Refresh slowly. #}
+  <div hx-get="/partials/stats"
+       hx-trigger="load delay:200ms, every 20s"
+       hx-swap="innerHTML swap:50ms">
+    {% include "partials/stats.html" %}
+  </div>
+
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <div class="lg:col-span-2 tm-section"
+         hx-get="/partials/pulse" hx-trigger="load, every 2s" hx-swap="innerHTML" hx-timeout="8000">
+      <div class="text-xs text-slate-500 py-4 text-center">Loading pulse…</div>
+    </div>
+
+    <div class="tm-section flex flex-col">
+      <h2 class="tm-section-title">All-Time</h2>
+      <div class="flex-1"
+           hx-get="/partials/alltime"
+           hx-trigger="load delay:400ms, every 30s"
+           hx-swap="innerHTML swap:50ms">
+        {% include "partials/alltime.html" %}
+      </div>
+      <div class="mt-4 rounded-xl bg-ink-850/80 border border-white/5 p-3 text-[11px] text-slate-400 leading-relaxed">
+        <div class="font-medium text-slate-300 mb-1">Active strategy</div>
+        <div><span class="text-accent-soft">Strategy</span> Late-window favorite (BTC 15m)</div>
+        <div class="mt-0.5"><span class="text-accent-soft">Book</span> BTC + ETH · 15m only</div>
+        <div class="mt-2 text-slate-500">{{ stats.settings.mode }} · {{ stats.settings.order_type }} · ${{ stats.settings.position_size_usd }}</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tm-section"
+       hx-get="/partials/recent"
+       hx-trigger="load delay:350ms, every 20s"
+       hx-swap="innerHTML swap:50ms">
+    {% include "partials/recent.html" %}
+  </div>
+</div>
+{% endblock %}

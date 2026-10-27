@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}History · Polymarket Bot{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-end justify-between gap-3 flex-wrap">
+    <div>
+      <h1 class="text-lg font-semibold text-white">Signal History</h1>
+      <p class="text-xs text-slate-500 mt-0.5">{{ signals|length }} shown · {{ period.total }} match filter</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/history/export?fmt=csv{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.result %}&result={{ filters.result }}{% endif %}{% if filters.timeframe %}&timeframe={{ filters.timeframe }}{% endif %}{% if filters.strategy %}&strategy={{ filters.strategy }}{% endif %}{% for p in filters.pairs %}&pairs={{ p }}{% endfor %}"
+         class="inline-flex items-center gap-1.5 rounded-xl bg-ink-850 ring-1 ring-white/10 px-3 py-2 text-xs font-semibold text-slate-200 hover:ring-accent/40 hover:text-white transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+        Export CSV
+      </a>
+      <a href="/history/export?fmt=json{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.result %}&result={{ filters.result }}{% endif %}{% if filters.timeframe %}&timeframe={{ filters.timeframe }}{% endif %}{% if filters.strategy %}&strategy={{ filters.strategy }}{% endif %}{% for p in filters.pairs %}&pairs={{ p }}{% endfor %}"
+         class="inline-flex items-center gap-1.5 rounded-xl bg-ink-850 ring-1 ring-white/10 px-3 py-2 text-xs font-semibold text-slate-200 hover:ring-accent/40 hover:text-white transition">
+        Export JSON
+      </a>
+    </div>
+  </div>
+
+  {# ── Period stats for current filters ── #}
+  <div class="rounded-2xl bg-ink-800 shadow-card p-4">
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Period performance</h2>
+      {% if filters.pairs %}
+      <span class="text-[10px] text-slate-500">{{ filters.pairs|join(', ') }}</span>
+      {% else %}
+      <span class="text-[10px] text-slate-500">All pairs</span>
+      {% endif %}
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Win rate</div>
+        <div class="text-xl font-bold tabular-nums {% if period.win_rate >= 55 %}text-emerald-400{% elif period.win_rate >= 50 %}text-amber-300{% else %}text-rose-400{% endif %}">
+          {{ '%.1f'|format(period.win_rate) }}%
+        </div>
+        <div class="text-[10px] text-slate-500 mt-0.5">{{ period.wins }}W / {{ period.losses }}L</div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">PnL</div>
+        <div class="text-xl font-bold tabular-nums {% if period.pnl > 0 %}text-emerald-400{% elif period.pnl < 0 %}text-rose-400{% else %}text-slate-300{% endif %}">
+          {% if period.pnl > 0 %}+{% endif %}${{ '%.2f'|format(period.pnl) }}
+        </div>
+        <div class="text-[10px] text-slate-500 mt-0.5">resolved only</div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Signals</div>
+        <div class="text-xl font-bold text-white tabular-nums">{{ period.total }}</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">{{ period.pending }} pending · {{ period.errors }} err</div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Decided</div>
+        <div class="text-xl font-bold text-white tabular-nums">{{ period.decided }}</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">used for WR</div>
+      </div>
+    </div>
+
+    {% if period.pairs and period.pairs|length > 0 %}
+    <div class="mt-4 overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead>
+          <tr class="text-slate-500 border-b border-white/5">
+            <th class="py-2 pr-2 font-medium">Pair</th>
+            <th class="py-2 pr-2 font-medium text-right">n</th>
+            <th class="py-2 pr-2 font-medium text-right">W</th>
+            <th class="py-2 pr-2 font-medium text-right">L</th>
+            <th class="py-2 pr-2 font-medium text-right">WR</th>
+            <th class="py-2 font-medium text-right">PnL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ps in period.pairs %}
+          <tr class="border-b border-white/5 last:border-0">
+            <td class="py-2 pr-2 font-semibold text-white">{{ ps.pair }}</td>
+            <td class="py-2 pr-2 text-right tabular-nums text-slate-300">{{ ps.n }}</td>
+            <td class="py-2 pr-2 text-right tabular-nums text-emerald-400">{{ ps.wins }}</td>
+            <td class="py-2 pr-2 text-right tabular-nums text-rose-400">{{ ps.losses }}</td>
+            <td class="py-2 pr-2 text-right tabular-nums {% if ps.win_rate >= 55 %}text-emerald-400{% elif ps.win_rate >= 50 %}text-amber-300{% else %}text-rose-400{% endif %}">
+              {% if ps.decided %}{{ '%.1f'|format(ps.win_rate) }}%{% else %}—{% endif %}
+            </td>
+            <td class="py-2 text-right tabular-nums {% if ps.pnl > 0 %}text-emerald-400{% elif ps.pnl < 0 %}text-rose-400{% else %}text-slate-400{% endif %}">
+              {% if ps.pnl > 0 %}+{% endif %}${{ '%.2f'|format(ps.pnl) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <form method="get" action="/history" class="rounded-2xl bg-ink-800 shadow-card p-4 space-y-3">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">From</label>
+        <input type="date" name="date_from" value="{{ filters.date_from }}"
+               class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50" />
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">To</label>
+        <input type="date" name="date_to" value="{{ filters.date_to }}"
+               class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50" />
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">Result</label>
+        <select name="result" class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50">
+          <option value="" {% if not filters.result %}selected{% endif %}>All</option>
+          <option value="win" {% if filters.result=='win' %}selected{% endif %}>Win</option>
+          <option value="loss" {% if filters.result=='loss' %}selected{% endif %}>Loss</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">Timeframe</label>
+        <select name="timeframe" class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50">
+          <option value="" {% if not filters.timeframe %}selected{% endif %}>All</option>
+          <option value="5m" {% if filters.timeframe=='5m' %}selected{% endif %}>5m</option>
+          <option value="15m" {% if filters.timeframe=='15m' %}selected{% endif %}>15m</option>
+          <option value="1h" {% if filters.timeframe=='1h' %}selected{% endif %}>1h</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">Strategy (5m)</label>
+        <select name="strategy" class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50">
+          <option value="" {% if not filters.strategy %}selected{% endif %}>All strategies</option>
+          <option value="l5_value_lock_5m" {% if filters.strategy=='l5_value_lock_5m' or filters.strategy=='l5' %}selected{% endif %}>L5 Value Lock</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label class="text-[11px] text-slate-500 font-medium block mb-2">Pairs</label>
+      <div class="flex flex-wrap gap-2">
+        {% for p in all_pairs %}
+        <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-ink-850 ring-1 ring-white/10 cursor-pointer hover:ring-accent/40 transition">
+          <input type="checkbox" name="pairs" value="{{ p }}"
+                 class="rounded border-white/20 bg-ink-900 text-accent focus:ring-accent/40"
+                 {% if p in filters.pairs %}checked{% endif %} />
+          <span class="text-xs font-medium text-white">{{ p }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="text-[10px] text-slate-600 mt-1.5">Leave none checked = all pairs. Select one or more for combined WR.</p>
+    </div>
+
+    <div class="flex gap-2 pt-1 flex-wrap">
+      <button type="submit" class="flex-1 min-w-[120px] rounded-xl bg-accent text-ink-950 font-semibold text-sm py-2.5 hover:opacity-90 transition">
+        Apply filters
+      </button>
+      <a href="/history" class="rounded-xl bg-ink-850 ring-1 ring-white/10 text-slate-300 text-sm font-medium px-4 py-2.5 hover:bg-ink-800 transition">
+        Reset
+      </a>
+      <button type="submit" formaction="/history/export" formmethod="get" name="fmt" value="csv"
+              class="rounded-xl bg-ink-850 ring-1 ring-white/10 text-slate-200 text-sm font-medium px-4 py-2.5 hover:ring-accent/40 transition">
+        Download CSV
+      </button>
+      <button type="submit" formaction="/history/export" formmethod="get" name="fmt" value="json"
+              class="rounded-xl bg-ink-850 ring-1 ring-white/10 text-slate-200 text-sm font-medium px-4 py-2.5 hover:ring-accent/40 transition">
+        Download JSON
+      </button>
+    </div>
+  </form>
+
+  <div class="rounded-2xl bg-ink-800 shadow-card overflow-hidden">
+    {% if not signals %}
+      <div class="p-8 text-center text-sm text-slate-500">No signals match these filters.</div>
+    {% else %}
+      <div class="divide-y divide-white/5">
+        {% for s in signals %}
+        <div class="px-4 py-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2 pt-0.5">
+              {% if s.direction == 'UP' %}
+              <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-bold">↑</span>
+              {% else %}
+              <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/15 text-rose-400 text-xs font-bold">↓</span>
+              {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-semibold text-sm text-white">{{ s.pair }}</span>
+                <span class="text-xs text-slate-500">{{ s.timeframe }}</span>
+                {% set sid = s.strategy_id or '' %}
+                {% if sid == 'l5_value_lock_5m' or sid == 'l5' %}
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-500/15 text-violet-300">L5</span>
+                {% else %}
+                <div class="text-[11px] text-slate-500">{{ s.status|upper }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

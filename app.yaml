@@ -1,0 +1,37 @@
+# Wasmer Edge app configuration
+# Replace `owner` with your Wasmer username/namespace before deploy.
+# Secrets (keys, DB URL) should be set via: wasmer app secret create ...
+kind: wasmer.io/App.v0
+name: polymarket-bot-l5
+owner: YOUR_WASMER_USERNAME
+package: .
+debug: true
+
+# CLI args passed to the Python runner (must match wasmer.toml intent)
+cli_args:
+  - -m
+  - uvicorn
+  - app.main:app
+  - --host
+  - "0.0.0.0"
+  - --port
+  - "80"
+  - --workers
+  - "1"
+
+env:
+  PYTHONPATH: /app
+  PYTHONUNBUFFERED: "1"
+  # Non-secret defaults only. Put secrets with:
+  #   wasmer app secret create --app polymarket-bot-l5 DATABASE_URL
+  #   wasmer app secret create --app polymarket-bot-l5 POLYMARKET_PRIVATE_KEY
+  #   wasmer app secret create --app polymarket-bot-l5 APP_SECRET
+  #   etc.
+  DATABASE_URL: "sqlite:////app/data/polymarket_bot.db"
+  # mode defaults to shadow until you set live credentials + toggle in UI
+
+# Optional: enable edge capabilities when available on your plan
+# capabilities:
+#   instaboot:
+#     requests:
+#       - path: /

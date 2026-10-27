@@ -1,0 +1,36 @@
+# Wasmer package manifest — L5 Value Lock Polymarket bot
+# Deploy: wasmer login && wasmer deploy
+# Docs: https://docs.wasmer.io/edge
+
+[package]
+name = "polymarket-bot-l5"
+version = "1.0.0"
+description = "Polymarket BTC 5m L5 Value Lock trading bot (FastAPI + APScheduler)"
+license = "Proprietary"
+readme = "README.md"
+
+[dependencies]
+"wasmer/python" = "^3.12.6"
+
+# Map local project root into the container filesystem
+[fs]
+"/app" = "."
+
+[[command]]
+name = "script"
+module = "wasmer/python:python"
+runner = "wasi"
+
+[command.annotations.wasi]
+# Long-running ASGI server. Wasmer Edge injects PORT; default 80 for Edge.
+main-args = [
+  "-m", "uvicorn",
+  "app.main:app",
+  "--host", "0.0.0.0",
+  "--port", "80",
+  "--workers", "1",
+]
+env = [
+  "PYTHONPATH=/app",
+  "PYTHONUNBUFFERED=1",
+]

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Live History · Polymarket Bot{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-end justify-between gap-3 flex-wrap">
+    <div>
+      <h1 class="text-lg font-semibold text-white">Live History</h1>
+      <p class="text-xs text-slate-500 mt-0.5">On-chain / CLOB trades · {{ activity.count if activity and activity.success else 0 }} shown</p>
+    </div>
+  </div>
+
+  {# Period summary #}
+  <div class="rounded-2xl bg-ink-800 shadow-card p-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Trades</div>
+        <div class="text-xl font-bold text-white tabular-nums">{{ activity.count if activity and activity.success else 0 }}</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">
+          {% if activity and activity.success %}
+            {{ activity.resolved_count or 0 }} resolved · {{ activity.open_count or 0 }} open
+          {% else %}filtered{% endif %}
+        </div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Realized PnL</div>
+        {% set rp = activity.realized_pnl if activity and activity.success else 0 %}
+        <div class="text-xl font-bold tabular-nums {% if rp > 0 %}text-emerald-400{% elif rp < 0 %}text-rose-400{% else %}text-slate-300{% endif %}">
+          {% if rp > 0 %}+{% endif %}${{ '%.2f'|format(rp) }}
+        </div>
+        <div class="text-[10px] text-slate-500 mt-0.5">Polymarket outcomes</div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Volume</div>
+        <div class="text-xl font-bold text-white tabular-nums">${{ '%.2f'|format(activity.volume_usd if activity and activity.success else 0) }}</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">notional</div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 p-3">
+        <div class="text-[10px] text-slate-500 uppercase">Wallet</div>
+        <div class="text-sm font-semibold text-slate-200 truncate mt-1">
+          {% if activity and activity.user %}{{ activity.user[:12] }}…{% else %}—{% endif %}
+        </div>
+        <div class="text-[10px] text-slate-500 mt-0.5">funder</div>
+      </div>
+    </div>
+    {% if activity and not activity.success and activity.error %}
+    <div class="mt-3 text-xs text-rose-400">{{ activity.error }}</div>
+    {% endif %}
+  </div>
+
+  {# Filters #}
+  <form method="get" action="/live-history" class="rounded-2xl bg-ink-800 shadow-card p-4 space-y-3">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">From</label>
+        <input type="date" name="date_from" value="{{ filters.date_from }}"
+               class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50" />
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">To</label>
+        <input type="date" name="date_to" value="{{ filters.date_to }}"
+               class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50" />
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">Result</label>
+        <select name="result" class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50">
+          <option value="" {% if not filters.result %}selected{% endif %}>All</option>
+          <option value="win" {% if filters.result=='win' %}selected{% endif %}>Win</option>
+          <option value="loss" {% if filters.result=='loss' %}selected{% endif %}>Loss</option>
+          <option value="open" {% if filters.result=='open' %}selected{% endif %}>Open</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">Side</label>
+        <select name="side" class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50">
+          <option value="" {% if not filters.side %}selected{% endif %}>All</option>
+          <option value="BUY" {% if filters.side=='BUY' %}selected{% endif %}>BUY</option>
+          <option value="SELL" {% if filters.side=='SELL' %}selected{% endif %}>SELL</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-500 font-medium block mb-1">Pair</label>
+        <select name="pair" class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50">
+          <option value="" {% if not filters.pair %}selected{% endif %}>All</option>
+          <option value="BTC" {% if filters.pair=='BTC' %}selected{% endif %}>BTC</option>
+          <option value="ETH" {% if filters.pair=='ETH' %}selected{% endif %}>ETH</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="rounded-xl bg-accent/90 hover:bg-accent text-ink-950 font-semibold text-sm px-4 py-2.5 transition">Apply</button>
+      <a href="/live-history" class="rounded-xl bg-ink-850 ring-1 ring-white/10 text-slate-300 text-sm px-4 py-2.5 hover:text-white transition">Reset</a>
+    </div>
+  </form>
+
+  {# Trades table #}
+  <div class="rounded-2xl bg-ink-800 shadow-card overflow-hidden">
+    <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+      <div class="text-sm font-medium">CLOB trades</div>
+      <div class="text-[11px] text-slate-500">Polymarket Data API</div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-[11px] text-slate-500 border-b border-white/5 bg-ink-850/50">
+          <tr>
+            <th class="text-left px-4 py-2 font-medium">Time (UTC)</th>
+            <th class="text-left px-4 py-2 font-medium">Pair</th>
+            <th class="text-left px-4 py-2 font-medium">Side</th>
+            <th class="text-left px-4 py-2 font-medium">Market</th>
+            <th class="text-right px-4 py-2 font-medium">Size</th>
+            <th class="text-right px-4 py-2 font-medium">Price</th>
+            <th class="text-right px-4 py-2 font-medium">Notional</th>
+            <th class="text-right px-4 py-2 font-medium">PnL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if activity and activity.success and activity.trades %}
+            {% for tr in activity.trades %}
+            <tr class="border-b border-white/5 hover:bg-white/[0.02]">
+              <td class="px-4 py-2 text-xs text-slate-400 tabular-nums whitespace-nowrap">{{ tr.time_utc or "—" }}</td>
+              <td class="px-4 py-2 text-xs font-semibold text-white">{{ tr.pair or "—" }}</td>
+              <td class="px-4 py-2">
+                <span class="{% if tr.side == 'BUY' %}text-emerald-400{% else %}text-rose-400{% endif %} font-medium text-xs">{{ tr.side or '—' }}</span>
+                {% if tr.outcome %}<span class="text-slate-500 text-xs ml-1">{{ tr.outcome }}</span>{% endif %}
+              </td>
+              <td class="px-4 py-2 text-xs text-slate-300 max-w-[16rem] truncate">{{ tr.title or '—' }}</td>
+              <td class="px-4 py-2 text-right tabular-nums text-xs">{{ '%.2f'|format(tr.size or 0) }}</td>
+              <td class="px-4 py-2 text-right tabular-nums text-xs">{{ '%.3f'|format(tr.price or 0) }}</td>
+              <td class="px-4 py-2 text-right tabular-nums text-xs">${{ '%.2f'|format(tr.notional or 0) }}</td>
+              <td class="px-4 py-2 text-right tabular-nums text-xs {% if tr.pnl is not none and tr.pnl > 0 %}text-emerald-400{% elif tr.pnl is not none and tr.pnl < 0 %}text-rose-400{% else %}text-slate-500{% endif %}">
+                {% if tr.pnl is not none %}{% if tr.pnl > 0 %}+{% endif %}${{ '%.2f'|format(tr.pnl) }}{% else %}open{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="px-4 py-8 text-center text-slate-500 text-sm">
+                {% if activity and activity.error %}{{ activity.error }}{% else %}No live trades for this filter{% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sign in · Signal Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/app.css?v=4" />
+  <style>
+    /* Critical CSS — works even if /static fails */
+    *,*::before,*::after{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body.auth-body{
+      margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,sans-serif;
+      background:#eef2f7;color:#0f172a;
+      display:flex;align-items:center;justify-content:center;
+      padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));
+    }
+    .auth-shell{width:100%;max-width:920px}
+    .auth-split{
+      display:grid;grid-template-columns:1.05fr 1fr;
+      background:#fff;border-radius:20px;overflow:hidden;
+      box-shadow:0 24px 64px rgba(15,23,42,.16);
+      min-height:520px;
+    }
+    .auth-visual{
+      background:linear-gradient(165deg,#0f172a 0%,#1e3a5f 55%,#2563eb 120%);
+      color:#fff;padding:36px 32px;
+      display:flex;flex-direction:column;justify-content:flex-end;
+    }
+    .auth-visual h2{margin:0 0 10px;font-size:28px;font-weight:700;letter-spacing:-.03em}
+    .auth-visual p{margin:0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.55;max-width:28ch}
+    .auth-panel{padding:32px 28px;background:#fff;display:flex;flex-direction:column;justify-content:center}
+    .auth-brand-row{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+    .auth-logo{
+      width:42px;height:42px;border-radius:12px;background:#3b82f6;color:#fff;
+      display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0
+    }
+    .auth-title{font-size:20px;font-weight:700;margin:0;color:#0f172a}
+    .auth-sub{font-size:13px;color:#64748b;margin:2px 0 0}
+    .auth-tabs{
+      display:grid;grid-template-columns:1fr 1fr;gap:4px;
+      background:#f1f5f9;border-radius:12px;padding:4px;margin-bottom:18px
+    }
+    .auth-tab{
+      border:0;background:transparent;color:#64748b;cursor:pointer;
+      font-size:13px;font-weight:600;padding:11px;border-radius:9px;font-family:inherit
+    }
+    .auth-tab.is-active{background:#fff;color:#2563eb;box-shadow:0 1px 3px rgba(15,23,42,.08)}
+    .auth-form{display:flex;flex-direction:column;gap:10px}
+    .auth-form.hidden{display:none!important}
+    .auth-label{font-size:12px;font-weight:600;color:#475569}
+    .auth-input{
+      width:100%;border:1px solid #e2e8f0;background:#f8fafc;
+      border-radius:12px;padding:13px 14px;color:#0f172a;font-size:16px;
+      outline:none;font-family:inherit;-webkit-appearance:none
+    }
+    .auth-input:focus{border-color:#93c5fd;background:#fff;box-shadow:0 0 0 4px rgba(59,130,246,.12)}
+    .auth-btn{
+      margin-top:8px;border:0;border-radius:999px;padding:14px 18px;
+      background:#3b82f6;color:#fff;font-weight:600;font-size:15px;
+      cursor:pointer;font-family:inherit;width:100%
+    }
+    .auth-btn:hover{background:#2563eb}
+    .auth-hint{font-size:12px;color:#94a3b8;margin:0;line-height:1.45}
+    .auth-alert{border-radius:12px;padding:11px 13px;font-size:13px;margin-bottom:14px}
+    .auth-alert-error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    .auth-alert-info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+    .auth-foot{text-align:center;color:#94a3b8;font-size:12px;margin-top:14px}
+    @media (max-width:720px){
+      body.auth-body{padding:12px;align-items:flex-start;padding-top:24px}
+      .auth-split{grid-template-columns:1fr;min-height:0;border-radius:16px}
+      .auth-visual{padding:24px 20px;min-height:140px}
+      .auth-visual h2{font-size:22px}
+      .auth-panel{padding:24px 20px}
+      .auth-input{font-size:16px} /* prevents iOS zoom */
+    }
+  </style>
+</head>
+<body class="auth-body">
+  <div class="auth-shell">
+    <div class="auth-split">
+      <div class="auth-visual">
+        <h2>Trade with clarity</h2>
+        <p>Automated BTC &amp; ETH 15m signals on Polymarket — join, get approved, connect your wallet credentials.</p>
+      </div>
+      <div class="auth-panel">
+        <div class="auth-brand-row">
+          <div class="auth-logo">SD</div>
+          <div>
+            <div class="auth-title">Signal Desk</div>
+            <div class="auth-sub">Secure access</div>
+          </div>
+        </div>
+
+        {% if error %}<div class="auth-alert auth-alert-error">{{ error }}</div>{% endif %}
+        {% if info %}<div class="auth-alert auth-alert-info">{{ info }}</div>{% endif %}
+
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tab is-active" data-tab="join" role="tab">Join</button>
+          <button type="button" class="auth-tab" data-tab="signin" role="tab">Sign in</button>
+        </div>
+
+        <form method="post" action="/login/register" id="tab-join" class="auth-form" role="tabpanel">
+          <label class="auth-label" for="join-user">Username</label>
+          <input class="auth-input" id="join-user" name="username" required minlength="3" maxlength="64"
+                 pattern="[A-Za-z0-9_\-]+" placeholder="Choose a username"
+                 value="{{ prefill or '' }}" autocomplete="username" />
+          <p class="auth-hint">No password yet. After approval you’ll set a password and connect Polymarket credentials.</p>
+          <button type="submit" class="auth-btn">Continue →</button>
+        </form>
+
+        <form method="post" action="/login" id="tab-signin" class="auth-form hidden" role="tabpanel">
+          <label class="auth-label" for="si-user">Username</label>
+          <input class="auth-input" id="si-user" name="username" required value="{{ prefill or '' }}" autocomplete="username" />
+          <label class="auth-label" for="si-pass">Password</label>
+          <input class="auth-input" id="si-pass" name="password" type="password" required minlength="6" autocomplete="current-password" />
+          <button type="submit" class="auth-btn">Login →</button>
+        </form>
+      </div>
+    </div>
+    <p class="auth-foot">Access is by approval only.</p>
+  </div>
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll('.auth-tab');
+      var join = document.getElementById('tab-join');
+      var signin = document.getElementById('tab-signin');
+      tabs.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          tabs.forEach(function (b) { b.classList.remove('is-active'); });
+          btn.classList.add('is-active');
+          var t = btn.getAttribute('data-tab');
+          if (t === 'join') {
+            join.classList.remove('hidden');
+            signin.classList.add('hidden');
+          } else {
+            signin.classList.remove('hidden');
+            join.classList.add('hidden');
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

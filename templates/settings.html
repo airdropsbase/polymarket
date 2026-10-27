@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Settings · Polymarket Bot{% endblock %}
+{% block content %}
+<div class="space-y-5 max-w-xl mx-auto">
+  <div>
+    <h1 class="text-lg font-semibold text-white">Settings</h1>
+    <p class="text-xs text-slate-500 mt-0.5">Trading mode, size, and credentials</p>
+  </div>
+
+  {% if request.query_params.get('saved') %}
+  <div class="rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/25 text-emerald-300 text-sm px-4 py-3">Settings saved.</div>
+  {% endif %}
+  {% if request.query_params.get('live_blocked') %}
+  <div class="rounded-xl bg-amber-500/10 ring-1 ring-amber-500/25 text-amber-300 text-sm px-4 py-3">
+    Live mode requires POLYMARKET_PRIVATE_KEY and POLYMARKET_FUNDER_ADDRESS. Staying in Shadow.
+  </div>
+  {% endif %}
+  {% if request.query_params.get('reset') %}
+  <div class="rounded-xl bg-accent/10 ring-1 ring-accent/25 text-accent-soft text-sm px-4 py-3">Shadow balance reset to $50.</div>
+  {% endif %}
+
+  <form method="post" action="/settings" class="rounded-2xl bg-ink-800 shadow-card p-5 space-y-6">
+    <div>
+      <div class="text-sm font-semibold text-white mb-2">Trading Mode</div>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="cursor-pointer">
+          <input type="radio" name="mode" value="shadow" class="peer sr-only" {% if stats.settings.mode != 'live' %}checked{% endif %} />
+          <div class="peer-checked:bg-accent peer-checked:ring-accent/40 ring-1 ring-white/10 rounded-xl p-3 text-center transition">
+            <div class="font-semibold text-sm">Shadow</div>
+            <div class="text-[11px] text-white/60 mt-0.5">Paper · default</div>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="mode" value="live" class="peer sr-only" {% if stats.settings.mode == 'live' %}checked{% endif %} />
+          <div class="peer-checked:bg-rose-600 peer-checked:ring-rose-500/40 ring-1 ring-white/10 rounded-xl p-3 text-center transition">
+            <div class="font-semibold text-sm">Live</div>
+            <div class="text-[11px] text-white/60 mt-0.5">Real pUSD</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="text-sm font-semibold text-white mb-2">Execution</div>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="cursor-pointer">
+          <input type="radio" name="order_type" value="FAK" class="peer sr-only" {% if stats.settings.order_type != 'GTC' %}checked{% endif %} />
+          <div class="peer-checked:bg-accent peer-checked:ring-accent/40 ring-1 ring-white/10 rounded-xl p-3 text-center transition">
+            <div class="font-semibold text-sm">FAK</div>
+            <div class="text-[11px] text-white/60 mt-0.5">1-Tap · $ amount · min $1</div>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="order_type" value="GTC" class="peer sr-only" {% if stats.settings.order_type == 'GTC' %}checked{% endif %} />
+          <div class="peer-checked:bg-accent peer-checked:ring-accent/40 ring-1 ring-white/10 rounded-xl p-3 text-center transition">
+            <div class="font-semibold text-sm">GTC</div>
+            <div class="text-[11px] text-white/60 mt-0.5">Limit · min ~5 shares</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label class="text-sm font-semibold text-white block mb-1.5">Position Size (USD)</label>
+      <input type="number" name="position_size_usd" min="1" step="0.01" value="{{ stats.settings.position_size_usd }}"
+             class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50" />
+      <p class="text-[11px] text-slate-500 mt-1.5">
+        Stake per trade in USD (min $1). FAK spends this dollar amount; GTC converts to shares.
+      </p>
+    </div>
+
+    <div>
+      <div class="text-sm font-semibold text-white mb-2">Scale-in Entries</div>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="cursor-pointer">
+          <input type="radio" name="scale_entries" value="1" class="peer sr-only"
+                 {% if stats.settings.scale_entries is not defined or stats.settings.scale_entries != 5 %}checked{% endif %} />
+          <div class="peer-checked:bg-accent peer-checked:ring-accent/40 ring-1 ring-white/10 rounded-xl p-3 text-center transition">
+            <div class="font-semibold text-sm">1×</div>
+            <div class="text-[11px] text-white/60 mt-0.5">Single $1 fill · lower DD</div>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="scale_entries" value="5" class="peer sr-only"
+                 {% if stats.settings.scale_entries is defined and stats.settings.scale_entries == 5 %}checked{% endif %} />
+          <div class="peer-checked:bg-accent peer-checked:ring-accent/40 ring-1 ring-white/10 rounded-xl p-3 text-center transition">
+            <div class="font-semibold text-sm">5×</div>
+            <div class="text-[11px] text-white/60 mt-0.5">Scale-in · up to 5 × $1</div>
+          </div>
+        </label>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1.5">
+        How many $1 FAK fills to place per qualifying window. 1× = lower risk / lower capital. 5× = higher volume &amp; PnL.
+      </p>
+    </div>
+
+    <div>
+      <label class="text-sm font-semibold text-white block mb-1.5">Max Contract Price <span class="text-muted font-normal">(GTC only)</span></label>
+      <p class="text-xs text-muted mb-1.5">Applies to GTC limit orders. FAK uses live market price (min $1), not this cap.</p>
+      <input type="number" name="max_contract_price" min="0.01" max="0.99" step="0.01" value="{{ stats.settings.max_contract_price }}"
+             class="w-full bg-ink-850 ring-1 ring-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-accent/50" />
+      <p class="text-[11px] text-slate-500 mt-1.5">Cap buys above this price (default 0.55).</p>
+    </div>
+
+    <div>
+      <div class="text-sm font-semibold text-white mb-2">Pairs (live / shadow execution)</div>
+      <div class="flex gap-5">
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" name="enabled_btc" {% if stats.settings.enabled_btc is not defined or stats.settings.enabled_btc %}checked{% endif %}
+                 class="rounded border-slate-600 bg-ink-850 text-accent focus:ring-accent" />
+          BTC
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" name="enabled_eth" {% if stats.settings.enabled_eth is not defined or stats.settings.enabled_eth %}checked{% endif %}
+                 class="rounded border-slate-600 bg-ink-850 text-accent focus:ring-accent" />
+          ETH
+        </label>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1.5">Both pairs always record signals (shadow PnL). Checked pairs also execute <strong>live</strong> when mode is Live.</p>
+    </div>
+
+    <div>
+      <div class="text-sm font-semibold text-white mb-2">Timeframe execution</div>
+      <p class="text-[11px] text-slate-500 mb-2">
+        Signals still fire for every timeframe. These toggles only allow or block
+        <span class="text-slate-300">order execution / watching fills</span> (shadow + live).
+      </p>
+      <div class="flex flex-wrap gap-5">
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" name="enabled_5m"
+                 title="L5 Value Lock (running market, edge ≥ 3¢)"
+                 {% if stats.settings.enabled_5m %}checked{% endif %}
+                 class="rounded border-slate-600 bg-ink-850 text-accent focus:ring-accent" />
+          5-minute fills
+          <span class="text-[10px] text-slate-500">L5 Value Lock · running 5m market · |z|≥1 · edge≥0.03</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-500 opacity-50 cursor-not-allowed">
+          <input type="checkbox" name="enabled_15m" disabled
+                 title="15m strategy.py is disabled system-wide"
+                 class="rounded border-slate-600 bg-ink-850 text-accent focus:ring-accent" />
+          15-minute <span class="text-[10px]">DISABLED</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-400 opacity-60">
+          <input type="checkbox" name="enabled_1h" disabled
+                 class="rounded border-slate-600 bg-ink-850 text-accent focus:ring-accent" />
+          1-hour <span class="text-[10px]">(unused)</span>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="w-full bg-accent hover:bg-accent-soft text-white font-semibold rounded-xl py-3 text-sm transition">
+      Save Settings
+    </button>
+  </form>
+
+  <div class="rounded-2xl bg-ink-800 shadow-card p-5 flex items-center justify-between gap-3">
+    <div>
+      <div class="text-sm font-semibold text-white">Shadow Balance</div>
+      <div class="text-2xl font-bold text-accent-soft mt-1 tabular-nums">${{ '%.2f'|format(stats.settings.shadow_balance) }}</div>
+    </div>
+    <form method="post" action="/settings/reset-balance" onsubmit="return confirm('Reset shadow balance to $50?')">
+      <button type="submit" class="px-4 py-2 text-sm text-slate-300 ring-1 ring-white/10 rounded-xl hover:bg-white/5 transition">
+        Reset to $50
+      </button>
+    </form>
+  </div>
+
+  <div class="rounded-2xl bg-ink-800 shadow-card p-5 space-y-2.5">
+{% if is_admin %}
+    <div class="text-sm font-semibold text-white mb-1">Polymarket Credentials (operator)</div>
+    <div class="flex justify-between text-xs">
+      <span class="text-slate-500">Private key</span>
+      <span class="{% if stats.credentials.private_key_set %}text-emerald-400{% else %}text-slate-500{% endif %}">
+        {{ 'Set' if stats.credentials.private_key_set else 'Not set' }}
+      </span>
+    </div>
+    <div class="flex justify-between text-xs gap-3">
+      <span class="text-slate-500">Funder</span>
+      <span class="text-slate-300 font-mono text-[10px] truncate max-w-[200px]">{{ stats.credentials.funder or '—' }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="text-slate-500">Signature type</span>
+      <span class="text-slate-300">{{ stats.credentials.signature_type }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="text-slate-500">Live ready</span>
+      <span class="{% if stats.credentials.live_ready %}text-emerald-400{% else %}text-amber-400{% endif %}">
+        {{ 'Yes' if stats.credentials.live_ready else 'No' }}{% if stats.credentials.error %} · {{ stats.credentials.error }}{% endif %}
+      </span>
+    </div>
+    <p class="text-[11px] text-slate-500 pt-2 leading-relaxed border-t border-white/5 mt-2">
+      Set only <code class="text-slate-400">POLYMARKET_PRIVATE_KEY</code> and
+      <code class="text-slate-400">POLYMARKET_FUNDER_ADDRESS</code> as .env / server environment.
+      L2 API keys are derived automatically on the first live order.
+    </p>
+  </div>
+
+  <div class="rounded-2xl bg-ink-800 shadow-card p-5 space-y-2.5">
+{% else %}
+    <div class="rounded-xl bg-[#151c2e] border border-white/5 p-5 mb-4 text-xs text-slate-400">
+      <div class="text-sm font-semibold text-white mb-1">Your trading account</div>
+      <p class="mb-2">Live keys are on the <a href="/me/credentials" class="text-sky-400">Account</a> page (session key + funder). Operator Polymarket keys are never shared with you.</p>
+      <p>Mode / size below apply only to <strong class="text-slate-200">your</strong> autotrader.</p>
+    </div>
+{% endif %}
+    <div class="text-sm font-semibold text-white mb-1">Telegram Alerts</div>
+    <div class="flex justify-between text-xs">
+      <span class="text-slate-500">Status</span>
+      <span class="{% if stats.telegram is defined and stats.telegram.configured %}text-emerald-400{% else %}text-slate-500{% endif %}">
+        {{ 'Connected' if (stats.telegram is defined and stats.telegram.configured) else 'Not configured' }}
+      </span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="text-slate-500">Bot token</span>
+      <span class="{% if stats.telegram is defined and stats.telegram.token_set %}text-emerald-400{% else %}text-slate-500{% endif %}">
+        {{ 'Set' if (stats.telegram is defined and stats.telegram.token_set) else '—' }}
+      </span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="text-slate-500">Chat ID</span>
+      <span class="{% if stats.telegram is defined and stats.telegram.chat_id_set %}text-emerald-400{% else %}text-slate-500{% endif %}">
+        {{ 'Set' if (stats.telegram is defined and stats.telegram.chat_id_set) else '—' }}
+      </span>
+    </div>
+    <p class="text-[11px] text-slate-500 pt-2 leading-relaxed border-t border-white/5 mt-2">
+      Set .env / server environment <code class="text-slate-400">TELEGRAM_BOT_TOKEN</code> and
+      <code class="text-slate-400">TELEGRAM_CHAT_ID</code>.
+      Alerts fire on signal open, win/loss resolve, and a daily summary at 23:55 UTC (override with TELEGRAM_SUMMARY_HOUR / TELEGRAM_SUMMARY_MINUTE).
+    </p>
+  </div>
+
+</div>
+{% endblock %}

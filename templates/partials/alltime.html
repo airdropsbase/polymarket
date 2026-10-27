@@ -1,0 +1,25 @@
+<div id="live-alltime" class="space-y-3">
+  <div class="flex justify-between text-sm">
+    <span class="text-slate-500">Signals</span>
+    <span class="font-semibold tabular-nums">{{ stats.all_time.signals }}</span>
+  </div>
+  <div class="flex justify-between text-sm">
+    <span class="text-slate-500">Wins</span>
+    <span class="font-semibold text-emerald-400 tabular-nums">{{ stats.all_time.wins }}</span>
+  </div>
+  <div class="flex justify-between text-sm">
+    <span class="text-slate-500">Losses</span>
+    <span class="font-semibold text-rose-400 tabular-nums">{{ stats.all_time.losses }}</span>
+  </div>
+  <div class="flex justify-between text-sm">
+    <span class="text-slate-500">Win rate</span>
+    <span class="font-semibold tabular-nums">{{ '%.1f'|format(stats.all_time.win_rate) }}%</span>
+  </div>
+  <div class="h-px bg-white/5"></div>
+  <div class="flex justify-between text-sm">
+    <span class="text-slate-500">Total PnL</span>
+    <span class="font-semibold tabular-nums {% if stats.all_time.pnl >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+      ${{ '%.2f'|format(stats.all_time.pnl) }}
+    </span>
+  </div>
+</div>

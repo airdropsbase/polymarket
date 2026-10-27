@@ -1,0 +1,95 @@
+<section class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="live-stats">
+  <div class="tm-metric">
+    <div>
+      <div class="text-[11px] text-slate-500 font-medium">Shadow balance</div>
+      <div class="mt-1 text-2xl font-bold text-white tabular-nums tracking-tight">${{ '%.2f'|format(stats.settings.shadow_balance) }}</div>
+      <div class="mt-1 text-[11px] text-slate-500">Paper account</div>
+    </div>
+    <div class="tm-metric-icon orange">$</div>
+  </div>
+
+  <div class="tm-metric">
+    <div class="min-w-0">
+      <div class="text-[11px] text-slate-500 font-medium">Live pUSD</div>
+      {% if stats.live_balance and stats.live_balance.success %}
+        <div class="mt-1 text-2xl font-bold text-emerald-400 tabular-nums tracking-tight">${{ '%.2f'|format(stats.live_balance.pusd_balance) }}</div>
+        <div class="mt-1 text-[11px] text-slate-500 truncate">On-chain · {{ stats.live_balance.funder[:10] }}…</div>
+      {% else %}
+        <div class="mt-1 text-2xl font-bold text-slate-600 tracking-tight">—</div>
+        <div class="mt-1 text-[11px] text-rose-400/90 truncate">
+          {% if stats.live_balance and stats.live_balance.error %}{{ stats.live_balance.error[:50] }}
+          {% else %}Connect live keys{% endif %}
+        </div>
+      {% endif %}
+    </div>
+    <div class="tm-metric-icon blue">◎</div>
+  </div>
+
+  <div class="tm-metric">
+    <div>
+      <div class="text-[11px] text-slate-500 font-medium">Live daily PnL</div>
+      {% set clob_d = stats.live_clob_daily_pnl if stats.live_clob_daily_pnl is defined else none %}
+      {% set ocp = stats.live_onchain_daily_pnl %}
+      {% if clob_d is not none %}
+        <div class="mt-1 text-2xl font-bold tabular-nums tracking-tight {% if clob_d > 0 %}text-emerald-400{% elif clob_d < 0 %}text-rose-400{% else %}text-slate-500{% endif %}">
+          {% if clob_d > 0 %}+{% endif %}${{ '%.2f'|format(clob_d) }}
+        </div>
+        <div class="mt-1 text-[11px] text-slate-500">CLOB resolved today</div>
+      {% elif ocp is not none %}
+        <div class="mt-1 text-2xl font-bold tabular-nums tracking-tight {% if ocp > 0 %}text-emerald-400{% elif ocp < 0 %}text-rose-400{% else %}text-slate-500{% endif %}">
+          {% if ocp > 0 %}+{% endif %}${{ '%.2f'|format(ocp) }}
+        </div>
+        <div class="mt-1 text-[11px] text-slate-500">On-chain day Δ</div>
+      {% else %}
+        <div class="mt-1 text-2xl font-bold text-slate-600">—</div>
+        <div class="mt-1 text-[11px] text-slate-500">—</div>
+      {% endif %}
+    </div>
+    <div class="tm-metric-icon teal">↗</div>
+  </div>
+
+  <div class="tm-metric">
+    <div>
+      <div class="text-[11px] text-slate-500 font-medium">Today WR</div>
+      <div class="mt-1 text-2xl font-bold tabular-nums tracking-tight {% if stats.today.win_rate >= 55 %}text-emerald-400{% elif stats.today.wins + stats.today.losses == 0 %}text-slate-500{% else %}text-white{% endif %}">
+        {{ '%.1f'|format(stats.today.win_rate) }}%
+      </div>
+      <div class="mt-1 text-[11px] text-slate-500">
+        <span class="text-emerald-400/90">{{ stats.today.wins }}W</span> /
+        <span class="text-rose-400/90">{{ stats.today.losses }}L</span>
+        {% if stats.today.pending %} · {{ stats.today.pending }} open{% endif %}
+      </div>
+    </div>
+    <div class="tm-metric-icon purple">%</div>
+  </div>
+</section>
+
+<section class="grid grid-cols-2 gap-3 mt-3">
+  <div class="tm-metric">
+    <div>
+      <div class="text-[11px] text-slate-500 font-medium">Shadow today</div>
+      {% set sp = stats.today.pnl_shadow if stats.today.pnl_shadow is defined else 0 %}
+      <div class="mt-1 text-2xl font-bold tabular-nums tracking-tight {% if sp > 0 %}text-emerald-400{% elif sp < 0 %}text-rose-400{% else %}text-slate-500{% endif %}">
+        {% if sp > 0 %}+{% endif %}${{ '%.2f'|format(sp) }}
+      </div>
+      <div class="mt-1 text-[11px] text-slate-500">All signals (paper mirror)</div>
+    </div>
+    <div class="tm-metric-icon green">Σ</div>
+  </div>
+  <div class="tm-metric">
+    <div>
+      <div class="text-[11px] text-slate-500 font-medium">All-time live PnL</div>
+      {% set atp = stats.live_clob_all_time_pnl if stats.live_clob_all_time_pnl is defined and stats.live_clob_all_time_pnl is not none else stats.live_onchain_all_time_pnl %}
+      {% if atp is not none %}
+        <div class="mt-1 text-2xl font-bold tabular-nums tracking-tight {% if atp > 0 %}text-emerald-400{% elif atp < 0 %}text-rose-400{% else %}text-slate-500{% endif %}">
+          {% if atp > 0 %}+{% endif %}${{ '%.2f'|format(atp) }}
+        </div>
+        <div class="mt-1 text-[11px] text-slate-500">Since bot live start (CLOB)</div>
+      {% else %}
+        <div class="mt-1 text-2xl font-bold text-slate-600">—</div>
+        <div class="mt-1 text-[11px] text-slate-500">Connect live keys</div>
+      {% endif %}
+    </div>
+    <div class="tm-metric-icon blue">∞</div>
+  </div>
+</section>

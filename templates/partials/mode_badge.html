@@ -1,0 +1,17 @@
+{% set mode = (stats.settings.mode if stats is defined and stats.settings else 'shadow')|lower %}
+<form method="post" action="/settings/toggle-mode"
+      hx-post="/settings/toggle-mode"
+      hx-swap="outerHTML"
+      hx-target="this"
+      style="margin:0;padding:0;display:inline-flex">
+  <button type="submit"
+          id="mode-toggle-btn"
+          title="Click to switch to {{ 'Shadow' if mode == 'live' else 'Live' }} (saves to settings)"
+          style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid {% if mode == 'live' %}rgba(248,113,113,0.35){% else %}rgba(148,163,184,0.25){% endif %};background:{% if mode == 'live' %}rgba(248,113,113,0.15){% else %}rgba(148,163,184,0.12){% endif %};color:{% if mode == 'live' %}#fda4af{% else %}#cbd5e1{% endif %};font-size:11px;font-weight:700;letter-spacing:0.04em;cursor:pointer;font-family:inherit">
+    {% if mode == 'live' %}
+      <span style="width:7px;height:7px;border-radius:50%;background:#f87171;box-shadow:0 0 0 3px rgba(248,113,113,0.2)"></span> LIVE
+    {% else %}
+      <span style="width:7px;height:7px;border-radius:50%;background:#94a3b8"></span> SHADOW
+    {% endif %}
+  </button>
+</form>

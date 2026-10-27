@@ -1,0 +1,59 @@
+<div id="live-recent">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold text-white">Recent Signals</h2>
+    <a href="/history" class="text-xs text-accent-soft hover:text-white transition">View all →</a>
+  </div>
+  <div class="rounded-2xl bg-ink-800 shadow-card overflow-hidden">
+    {% if not recent %}
+      <div class="px-4 py-14 text-center">
+        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/5 mb-3">
+          <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="text-slate-400 text-sm font-medium">No signals yet</div>
+        <div class="text-slate-600 text-xs mt-1.5 max-w-xs mx-auto leading-relaxed">
+          Fires in the last 5 minutes when median Up is in the favorite band. Quiet periods are normal.
+        </div>
+      </div>
+    {% else %}
+      <div class="divide-y divide-white/[0.04]">
+        {% for s in recent %}
+        <div class="px-4 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition">
+          <div class="flex-shrink-0">
+            {% if s.direction == 'UP' %}
+              <span class="inline-flex w-12 justify-center px-1.5 py-1 rounded-lg text-[10px] font-bold bg-sky-500/15 text-sky-300">UP</span>
+            {% else %}
+              <span class="inline-flex w-12 justify-center px-1.5 py-1 rounded-lg text-[10px] font-bold bg-orange-500/15 text-orange-300">DOWN</span>
+            {% endif %}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-white leading-tight">
+              {{ s.pair }} <span class="text-slate-500 font-normal text-xs">{{ s.timeframe }}</span>
+            </div>
+            <div class="text-[11px] text-slate-500 truncate mt-0.5">
+              {{ s.entry_time.strftime('%H:%M') if s.entry_time else '—' }}–{{ s.candle_close_time.strftime('%H:%M') if s.candle_close_time else '—' }} UTC
+              {% if s.signal_price %} · sig {{ '%.2f'|format(s.signal_price) }}{% endif %}
+              {% if s.entry_price %} · fill {{ '%.2f'|format(s.entry_price) }}{% endif %}
+              · {{ s.mode }}
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0 min-w-[3.5rem]">
+            {% if s.result == 'win' %}
+              <div class="text-[11px] font-bold text-emerald-400">WIN</div>
+              <div class="text-[11px] text-emerald-400/70 tabular-nums">+${{ '%.2f'|format(s.pnl) }}</div>
+            {% elif s.result == 'loss' %}
+              <div class="text-[11px] font-bold text-rose-400">LOSS</div>
+              <div class="text-[11px] text-rose-400/70 tabular-nums">${{ '%.2f'|format(s.pnl) }}</div>
+            {% elif s.status == 'pending' %}
+              <div class="text-[11px] font-bold text-amber-300 flex items-center justify-end gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> OPEN
+              </div>
+            {% else %}
+              <div class="text-[11px] font-medium text-slate-500">{{ s.status|upper }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>

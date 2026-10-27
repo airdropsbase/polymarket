@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{% block title %}Signal Desk{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/app.css?v=5" />
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    try {
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: { 950: '#0b1220', 900: '#111827', 850: '#182236', 800: '#121a2b' },
+              accent: { DEFAULT: '#3b82f6', soft: '#60a5fa' },
+            }
+          }
+        }
+      };
+    } catch (e) {}
+  </script>
+  <style>
+    .mobile-nav {
+      position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+      z-index: 9999 !important; border-top: 1px solid rgba(148,163,184,0.14);
+      background: rgba(11,18,32,0.98) !important; backdrop-filter: blur(12px);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .mobile-nav .tm-mob { min-height: 56px; }
+    @media (min-width: 1024px) {
+      .mobile-nav { display: none !important; }
+      .tm-rail { display: flex !important; }
+    }
+    @media (max-width: 1023px) {
+      .tm-rail { display: none !important; }
+      .tm-content { padding-bottom: 88px !important; }
+    }
+    @keyframes navprog{0%{transform:scaleX(0.15)}50%{transform:scaleX(0.65)}100%{transform:scaleX(0.9)}}
+    #nav-progress{
+      display:none;position:fixed;top:0;left:0;right:0;height:2px;z-index:10000;
+      background:linear-gradient(90deg,#3b82f6,#22d3ee);transform-origin:left;animation:navprog .7s ease infinite;
+    }
+    body.nav-loading #nav-progress{display:block}
+    #main-content.htmx-swapping{opacity:.55;transition:opacity 60ms linear}
+  </style>
+</head>
+<body>
+{% set show_shell = current_user and page not in ['login','pending','setup','admin_login'] %}
+{% if show_shell %}
+<div class="tm-shell">
+  <aside class="tm-rail" aria-label="Primary">
+    <div class="tm-rail-brand"><div class="app-logo">SD</div></div>
+    <nav class="tm-rail-nav">
+      <a href="/" class="tm-rail-item {% if page=='dashboard' %}is-active{% endif %}" title="Dashboard"
+         hx-get="/" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1v-9.5z"/></svg>
+      </a>
+      <a href="/history" class="tm-rail-item {% if page=='history' %}is-active{% endif %}" title="History"
+         hx-get="/history" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </a>
+      <a href="/live-history" class="tm-rail-item {% if page=='live_history' %}is-active{% endif %}" title="Live History"
+         hx-get="/live-history" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </a>
+      <a href="/settings" class="tm-rail-item {% if page=='settings' %}is-active{% endif %}" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+      </a>
+      <a href="/me/account" class="tm-rail-item {% if page=='credentials' %}is-active{% endif %}" title="Account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      </a>
+      {% if page == 'admin' %}
+      <a href="/admin/users" class="tm-rail-item is-active" title="Users"
+         hx-get="/admin/users" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m6-4a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      </a>
+      {% endif %}
+    </nav>
+    <div class="tm-rail-foot">
+      <a href="/logout" class="tm-rail-item" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <div class="tm-main">
+    <header class="tm-topbar">
+      <div class="tm-breadcrumb" id="tm-breadcrumb">
+        {% if page=='dashboard' %}Dashboard
+        {% elif page=='live_history' %}Live History
+        {% elif page=='credentials' %}Account
+        {% elif page=='admin' %}Access control
+        {% else %}{{ page|replace('_',' ')|title }}{% endif %}
+      </div>
+      <div class="tm-topbar-right">
+        <div id="mode-badge-slot">{% include "partials/mode_badge.html" %}</div>
+        {% if current_user %}
+        <div class="tm-user-chip" style="gap:8px">
+          <span class="tm-avatar">{{ (current_user.display_name or current_user.username)[0]|upper }}</span>
+          <span style="font-size:12px;color:#cbd5e1">{{ current_user.display_name or current_user.username }}</span>
+          <a href="/logout" title="Log out"
+             style="font-size:11px;color:#94a3b8;text-decoration:none;margin-left:4px;padding:4px 8px;border:1px solid rgba(148,163,184,.25);border-radius:8px"
+             onmouseover="this.style.color='#f1f5f9';this.style.borderColor='rgba(148,163,184,.5)'"
+             onmouseout="this.style.color='#94a3b8';this.style.borderColor='rgba(148,163,184,.25)'">Logout</a>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+    <main class="tm-content" id="main-content">
+{% endif %}
+
+{% block content %}{% endblock %}
+
+{% if show_shell %}
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);height:64px" class="safe-bottom">
+      <a href="/" class="tm-mob {% if page=='dashboard' %}is-active{% endif %}"
+         hx-get="/" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h3m10-10v9a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="/history" class="tm-mob {% if page=='history' %}is-active{% endif %}"
+         hx-get="/history" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>History</span>
+      </a>
+      <a href="/live-history" class="tm-mob {% if page=='live_history' %}is-active{% endif %}"
+         hx-get="/live-history" hx-target="#main-content" hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="body">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        <span>Live</span>
+      </a>
+      <a href="/settings" class="tm-mob {% if page=='settings' %}is-active{% endif %}">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        <span>Settings</span>
+      </a>
+      <a href="/me/account" class="tm-mob {% if page=='credentials' %}is-active{% endif %}">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span>Account</span>
+      </a>
+    </div>
+  </nav>
+</div>
+<div id="nav-progress"></div>
+<script>
+(function(){
+  var map={'/':'Dashboard','/history':'History','/live-history':'Live History','/settings':'Settings','/me/account':'Account','/me/credentials':'Account','/admin/users':'Access control'};
+  function syncNav(){
+    var path=location.pathname;
+    document.querySelectorAll('.tm-rail-item[href],.tm-mob[href]').forEach(function(a){
+      var href=a.getAttribute('href');
+      if(!href || href==='/logout') return;
+      var active=(href==='/' ? path==='/' : path.indexOf(href)===0);
+      a.classList.toggle('is-active', active);
+    });
+    var bc=document.getElementById('tm-breadcrumb');
+    if(bc && map[path]) bc.textContent=map[path];
+  }
+  document.body.addEventListener('htmx:beforeRequest', function(){ document.body.classList.add('nav-loading'); });
+  document.body.addEventListener('htmx:afterSwap', function(){ document.body.classList.remove('nav-loading'); syncNav(); });
+  document.body.addEventListener('htmx:responseError', function(){ document.body.classList.remove('nav-loading'); });
+  document.body.addEventListener('htmx:sendError', function(){ document.body.classList.remove('nav-loading'); });
+})();
+</script>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>
